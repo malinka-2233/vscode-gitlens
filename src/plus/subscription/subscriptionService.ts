@@ -27,7 +27,7 @@ import { Commands } from '../../constants';
 import type { Container } from '../../container';
 import { AccountValidationError } from '../../errors';
 import type { RepositoriesChangeEvent } from '../../git/gitProviderService';
-import type { Subscription } from '../../subscription';
+import type { Subscription, SubscriptionPlan } from '../../subscription';
 import {
 	computeSubscriptionState,
 	getSubscriptionPlan,
@@ -940,20 +940,25 @@ export class SubscriptionService implements Disposable {
 	}
 
 	private getStoredSubscription(): Subscription | undefined {
-		const storedSubscription = this.container.storage.get('premium:subscription');
+		const plan: SubscriptionPlan = {
+			id: SubscriptionPlanId.Pro,
+			name: getSubscriptionPlanName(SubscriptionPlanId.Pro),
+			bundle: false,
+			cancelled: false,
+			organizationId: undefined,
+			startedOn: new Date().toISOString(),
+			expiresOn: undefined,
+		};
 
-		const subscription = storedSubscription?.data;
-		if (subscription != null) {
-			// Migrate the plan names to the latest names
-			(subscription.plan.actual as Mutable<Subscription['plan']['actual']>).name = getSubscriptionPlanName(
-				subscription.plan.actual.id,
-			);
-			(subscription.plan.effective as Mutable<Subscription['plan']['effective']>).name = getSubscriptionPlanName(
-				subscription.plan.effective.id,
-			);
-		}
+		return {
+			plan: {
+				actual: plan,
+				effective: plan,
+			},
+			account: undefined,
 
-		return subscription;
+			state: SubscriptionState.Paid,
+		};
 	}
 
 	private async storeSubscription(subscription: Subscription): Promise<void> {
